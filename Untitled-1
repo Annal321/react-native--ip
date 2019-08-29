@@ -1,0 +1,60 @@
+sudo vim /usr/local/etc/nginx/nginx.conf
+在nginx.conf文件 最后一行添加 include /usr/local/etc/nginx/include/*.conf;
+
+2.添加一个 .conf 文件
+.conf内容
+dkmarketApi:  后端服务ip
+dkmarketFe： 前端ip
+server_name： 代理后访问的域名
+/api ：接口路径（ /api 或 /zeus）
+
+upstream dkmarketApi {
+   #server 10.227.18.10:8080;
+    server 10.227.24.95:9080;
+}
+
+upstream dkmarketFe {
+    server 10.227.18.5:3030;
+}
+
+server {
+    listen       80;
+    server_name  jianguodai-fe.happycheer.com;
+    location / {
+        add_header 'Access-Control-Allow-Origin' '*';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Cookie $http_cookie;
+        proxy_pass http://dkmarketFe;
+    }
+    #location / {
+    #   try_files $uri /root.htm;
+    #   index root.htm index.htm default.html default.htm;
+    #   root /Users/dazhuo/git/firstp2p-webdesign/daikuanmarket/dist;
+    #}
+    location /api {
+        add_header 'Access-Control-Allow-Origin' '*';
+        #反向代理之后保持之前的host
+        proxy_set_header Host $host;
+        #反向代理之后将真实ip放到X-Real-IP中
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Cookie $http_cookie;
+        #根据UA代理转发
+        
+        proxy_pass http://dkmarketApi;
+    }
+}
+
+3.重新启动nginx
+关闭apache
+sudo nginx //启动Nginx
+sudo nginx -s reload //重启nginx
+sudo nginx -s quit //退出nginx
+
+4.配置hosts
+127.0.0.1 jianguodai-fe.happycheer.com (jianguodai-fe.happycheer.com 为代理域名)
+
+配置完成后，直接访问http://jianguodai-fe.happycheer.com 即为 10.227.18.5:3030
+手机访问：1.打开charles  2.手机设置代理10.227.18.5 8888  3.charles - allow
